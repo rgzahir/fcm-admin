@@ -1,6 +1,7 @@
 import express, { Request, Response } from "express";
 import bodyParser from "body-parser";
 import * as admin from "firebase-admin";
+import { Message } from "firebase-admin/messaging";
 
 require("dotenv").config();
 
@@ -64,13 +65,34 @@ const sendNotificationToClientV2 = async () => {
   const topic = "test-fcm-topic";
 
   // maybe setup all the scheduling, time to live of the message, etc in here. need to do POC
-  const message = {
+  const message: Message = {
     data: {
-      score: "850",
-      time: "2:45",
+      purpose: "take consent",
+      title: "Data Message Title",
+      body: "Data message body",
+    },
+    // notification body is needed to show the message in the notification tray.
+    // But not quite working in samsung s20. Shannon & Akmal manage to mak eit work in their testing
+    notification: {
+      title: "Background Message Title",
+      body: "Background message body",
     },
     topic: topic,
   };
+
+  // message other than asking for consent
+  // const message: Message = {
+  //   data: {
+  //     purpose: "Other than consent message",
+  //     title: "Data Message Title",
+  //     body: "Data message body",
+  //   },
+  //   notification: {
+  //     title: "Background Message Title",
+  //     body: "Background message body",
+  //   },
+  //   topic: topic,
+  // };
 
   messaging
     .send(message)
