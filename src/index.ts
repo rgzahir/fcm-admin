@@ -1,7 +1,6 @@
 import express, { Request, Response } from "express";
 import bodyParser from "body-parser";
 import * as admin from "firebase-admin";
-import { Message } from "firebase-admin/messaging";
 
 require("dotenv").config();
 
@@ -9,6 +8,11 @@ const app = express();
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+
+export enum notificationTypeEnum {
+  inApp = "inApp",
+  pushNotification = "pushNotification",
+}
 
 // -------------------------------------------------------------------------------------------------------------------- FIREBASE ADMIN
 const projectId = "";
@@ -29,70 +33,175 @@ const messaging = admin.messaging();
 // firebase rss:
 // - https://firebase.google.com/docs/cloud-messaging/android/topic-messaging#build_send_requests
 
-// this function is LEGACY Cloud Messaging API
-const sendNotificationToClientV1 = async () => {
-  const topic = "test-fcm-topic";
-  const dummyNoti1 = {
-    message: {
-      topic: "matchday",
-      notification: {
-        title: "Background Message Title",
-        body: "Background message body",
-      },
-      webpush: {
-        fcm_options: {
-          link: "https://dummypage.com",
+const androidConfig: admin.messaging.AndroidConfig = {
+  priority: "high",
+};
+
+// this is Cloud Messaging API v1
+const sendNotificationToTopic = async () => {
+  const topic = "takeConsentTopic";
+
+  const message = {
+    notification: {
+      title: "Greetings MyBid user - Zahir testing",
+      body: "this is a notification - Zahir",
+    },
+    data: {
+      purpose: "take consent",
+      campaignId: "100",
+      occurrenceId: "12",
+      trigger: "Homepage",
+    },
+    topic,
+    android: androidConfig,
+    apns: {
+      payload: {
+        aps: {
+          sound: "default",
+          "content-available": 1,
         },
+      },
+      headers: {
+        "apns-priority": "5",
       },
     },
   };
-  const dummyNoti2 = {
-    message: "matchday",
+
+  const shannonmessage = {
+    notification: {
+      title: "Shannon is testing v1",
+      body: "Shannon's right time campaign v1",
+    },
+    data: {
+      title: "Shannon is testing v1",
+      body: "Shannon's Settings campaign v1",
+      purpose: "campaign message",
+      trigger: "Settings",
+      campaignExpirationTime: "1819575049914",
+      notificationType: "inApp",
+    },
+    topic: topic,
+    android: androidConfig,
+    apns: {
+      payload: {
+        aps: {
+          sound: "default",
+          "content-available": "1",
+        },
+      },
+      headers: {
+        "apns-priority": "5",
+      },
+    },
+  };
+
+  const asd = new Date();
+  const hour = asd.getHours();
+  const minutes = asd.getMinutes();
+  const secs = asd.getSeconds();
+  const timing = `${hour}:${minutes}:${secs}`;
+
+  // TopicMessage, inApp message
+  let messageV1 = {
+    notification: {
+      title: "Greetings MyBid user - Zahir testing",
+      body: timing,
+    },
+    data: {
+      title: "Greetings MyBid user - Zahir testing",
+      body: timing,
+      purpose: "take consent",
+      // purpose: "campaign message",
+      campaignId: "100",
+      occurrenceId: "12",
+      notificationType: "inApp",
+      campaignExpirationTime: "1819575049914",
+      // trigger: "Settings",
+      trigger: "Homepage",
+    },
+    topic: topic,
+    android: androidConfig,
+    apns: {
+      payload: {
+        aps: {
+          sound: "default",
+          "content-available": 1,
+        },
+      },
+      headers: {
+        "apns-priority": "5",
+      },
+    },
+  };
+
+  // TopicMessage, pushNotification message
+  let Newmessage = {
+    notification: {
+      title: "Greetings MyBid user - Zahir testing",
+      body: "this is a notification - Zahir",
+    },
+    data: {
+      // purpose: "take consent",
+      purpose: "campaign message",
+      campaignId: "100",
+      occurrenceId: "12",
+      // trigger: "Homepage",
+      trigger: "Settings",
+      notificationType: "inApp",
+      campaignExpirationTime: "1751082024",
+    },
+    topic: topic,
+    android: androidConfig,
+    apns: {
+      payload: {
+        aps: {
+          sound: "default",
+          "content-available": 1,
+        },
+      },
+      headers: {
+        "apns-priority": "5",
+      },
+    },
   };
 
   messaging
-    .sendToTopic(topic, { data: dummyNoti2 })
+    .send(messageV1)
     .then((response) => {
-      console.log(`Notifications sent:${response}successful `);
+      // Response is a message ID string.
+      console.log("Successfully sent message:", response);
     })
     .catch((error) => {
       console.log("Error sending message:", error);
     });
 };
 
-// this is Cloud Messaging API v1
-const sendNotificationToClientV2 = async () => {
-  const topic = "test-fcm-topic";
-
-  // maybe setup all the scheduling, time to live of the message, etc in here. need to do POC
-  const message: Message = {
-    data: {
-      purpose: "take consent",
-      title: "Data Message Title",
-      body: "Data message body",
-    },
-    // notification body is needed to show the message in the notification tray.
-    // But not quite working in samsung s20. Shannon & Akmal manage to mak eit work in their testing
+const sendNotificationToDeviceToken = async () => {
+  const message = {
     notification: {
-      title: "Background Message Title",
-      body: "Background message body",
+      title: "Zahir is testing",
+      body: "Zahir's 2nd campaign",
     },
-    topic: topic,
+    // token:
+    //   "f59UQNcrReCykAcF2dOcnI:APA91bHkHIASIGNMvNFlceonHBiSPAAtRy9t-4hPLbNG9gSXxoEDw8CsCmapc7On2Qe539X5vSH5QByrBXfFJY3l09EULP-oQETLuLZtep5jbvIZsq60X-tpvgILBOGtTP_zLQDU1N-4",
+    token:
+      "cMes8799dUwPiYJEEjZIbE:APA91bGDXypqUt2z35BmQ3wBJrQCgs-py7gNNnx308OOpQP_T_Q2Td4cjnE8piT7ZcznwrceTF7P3VBmpjVZyb2yxzQmUMNoYq97PbyQYi1G6OzVGgRyjbg77nvE7B7OpZlsY1mqzCFG",
+    data: {
+      purpose: "campaign message",
+    },
+    android: androidConfig,
+    apns: {
+      payload: {
+        aps: {
+          sound: "default",
+          "content-available": 1,
+        },
+      },
+      headers: {
+        "apns-priority": "5",
+      },
+    },
   };
-
-  // message other than asking for consent
-  // const message: Message = {
-  //   data: {
-  //     purpose: "Other than consent message",
-  //     title: "Data Message Title",
-  //     body: "Data message body",
-  //   },
-  //   notification: {
-  //     title: "Background Message Title",
-  //     body: "Background message body",
-  //   },
-  //   topic: topic,
-  // };
 
   messaging
     .send(message)
@@ -105,17 +214,29 @@ const sendNotificationToClientV2 = async () => {
     });
 };
 
-// ------------------------------------------------------------------------------------------------------------------------------------------------- FIREBASE ADMIN
+app.get("/send-topic", async (_req: Request, res: Response) => {
+  const asd = new Date();
+  const hour = asd.getHours();
+  const minutes = asd.getMinutes();
+  const secs = asd.getSeconds();
+  const timing = `${hour}:${minutes}:${secs}`;
 
-app.get("/send", async (_req: Request, res: Response) => {
   // await sendNotificationToClientV1();
-
-  await sendNotificationToClientV2();
-  return res.send("Message sent");
+  try {
+    await sendNotificationToTopic();
+    return res.send(`Topic Message sent ${timing}`);
+  } catch (error) {
+    console.log(error);
+  }
 });
 
-app.get("/", async (_req: Request, res: Response) => {
-  return res.send("Express Typescript on Vercel");
+app.get("/send-deviceToken", async (_req: Request, res: Response) => {
+  try {
+    await sendNotificationToDeviceToken();
+    return res.send("Campaign Message sent");
+  } catch (error) {
+    console.log(error);
+  }
 });
 
 const port = process.env.PORT || 8080;
